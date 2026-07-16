@@ -1,6 +1,5 @@
 name: Food Express Docker CI/CD Pipeline
 
-
 # Trigger pipeline whenever code is pushed to main branch
 on:
 

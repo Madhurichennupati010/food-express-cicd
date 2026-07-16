@@ -1,61 +1,89 @@
 const express = require("express");
-const path = require("path");
+const mysql = require("mysql2");
+const cors = require("cors");
 
 const app = express();
 
 const PORT = 3000;
 
-
-// Middleware
+app.use(cors());
 app.use(express.json());
 
+const db = mysql.createConnection({
+    host: "mysql",        // use "localhost" if MySQL is installed locally (not Docker)
+    user: "root",
+    password: "password", // change to your MySQL password
+    database: "fooddb"
+});
 
-// Serve Food Express frontend
-app.use(express.static(path.join(__dirname, "public")));
+db.connect((err) => {
+    if (err) {
+        console.log("Database Connection Failed");
+        console.log(err);
+        return;
+    }
 
+    console.log("Connected to MySQL");
+});
 
-// API Route
 app.get("/api/menu", (req, res) => {
 
-    const menu = [
+    res.json([
         {
-            id: 1,
-            name: "Pizza",
-            price: 250,
-            category: "Fast Food"
+            id:1,
+            name:"Pizza",
+            price:250
         },
         {
-            id: 2,
-            name: "Burger",
-            price: 150,
-            category: "Fast Food"
+            id:2,
+            name:"Burger",
+            price:150
         },
         {
-            id: 3,
-            name: "Biryani",
-            price: 300,
-            category: "Indian"
+            id:3,
+            name:"Biryani",
+            price:300
         }
-    ];
-
-
-    res.json(menu);
+    ]);
 
 });
 
+app.post("/order",(req,res)=>{
 
-// Health check endpoint
-app.get("/health", (req,res)=>{
+    const {food,price}=req.body;
 
-    res.status(200).send("Food Express Application Running");
+    const sql="INSERT INTO orders(food,price) VALUES (?,?)";
+
+    db.query(sql,[food,price],(err,result)=>{
+
+        if(err){
+
+            console.log(err);
+
+            return res.status(500).json({
+                success:false,
+                message:"Database Error"
+            });
+
+        }
+
+        res.json({
+            success:true,
+            message:"Order Stored Successfully"
+        });
+
+    });
 
 });
 
+app.get("/health",(req,res)=>{
 
-// IMPORTANT FOR DOCKER
-// Listen on 0.0.0.0
-app.listen(PORT, "0.0.0.0", () => {
+    res.send("Food Express Running");
 
-    console.log(`Food Express running on port ${PORT}`);
+});
+
+app.listen(PORT,"0.0.0.0",()=>{
+
+    console.log(`Server running on ${PORT}`);
 
 });

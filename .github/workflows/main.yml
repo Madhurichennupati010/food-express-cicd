@@ -1,0 +1,199 @@
+name: Food Express Docker CI/CD Pipeline
+
+
+# Trigger pipeline whenever code is pushed to main branch
+on:
+
+  push:
+
+    branches:
+      - main
+
+
+
+jobs:
+
+
+  build-test-deploy:
+
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+
+    #################################################
+    # Stage 1: Checkout Source Code
+    #################################################
+
+    - name: Checkout Source Code
+
+      uses: actions/checkout@v4
+
+
+
+    #################################################
+    # Stage 2: Configure Docker Environment
+    #################################################
+
+    - name: Verify Docker Installation
+
+      run: |
+
+        docker --version
+
+
+
+    #################################################
+    # Stage 3: Authenticate with Docker Hub
+    #################################################
+
+    - name: Login to Docker Hub
+
+      uses: docker/login-action@v3
+
+      with:
+
+        username: ${{ secrets.DOCKER_USERNAME }}
+
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+
+
+    #################################################
+    # Stage 4: Build Frontend Docker Image
+    #################################################
+
+    - name: Build Food Express Frontend Image
+
+      run: |
+
+        docker build \
+        -t madhu934652/food-express-frontend:v1 \
+        ./frontend
+
+
+
+    #################################################
+    # Stage 5: Build Backend Docker Image
+    #################################################
+
+    - name: Build Food Express Backend Image
+
+      run: |
+
+        docker build \
+        -t madhu934652/food-express-backend:v1 \
+        ./backend
+
+
+
+    #################################################
+    # Stage 6: Verify Docker Images
+    #################################################
+
+    - name: Verify Docker Images
+
+      run: |
+
+        docker images
+
+
+
+    #################################################
+    # Stage 7: Push Images to Docker Hub
+    #################################################
+
+    - name: Push Frontend Image to Docker Hub
+
+      run: |
+
+        docker push madhu934652/food-express-frontend:v1
+
+
+
+    - name: Push Backend Image to Docker Hub
+
+      run: |
+
+        docker push madhu934652/food-express-backend:v1
+
+
+
+    #################################################
+    # Stage 8: Run Application Containers
+    #################################################
+
+    - name: Run Backend Container
+
+      run: |
+
+        docker run -d \
+        --name food-backend \
+        -p 3000:3000 \
+        madhu934652/food-express-backend:v1
+
+
+
+    - name: Run Frontend Container
+
+      run: |
+
+        docker run -d \
+        --name food-frontend \
+        -p 8080:80 \
+        madhu934652/food-express-frontend:v1
+
+
+
+    #################################################
+    # Stage 9: Verify Running Containers
+    #################################################
+
+    - name: Verify Running Containers
+
+      run: |
+
+        echo "Running Docker Containers"
+
+        docker ps
+
+
+
+    #################################################
+    # Stage 10: Container Logs Verification
+    #################################################
+
+    - name: Verify Container Logs
+
+      run: |
+
+        echo "Frontend Container Logs"
+
+        docker logs food-frontend
+
+
+        echo "Backend Container Logs"
+
+        docker logs food-backend
+
+
+
+    #################################################
+    # Stage 11: Application Health Check
+    #################################################
+
+    - name: Validate Frontend Application
+
+      run: |
+
+        curl --fail http://localhost:8080
+
+
+
+    - name: Validate Backend API
+
+      run: |
+
+        curl --fail http://localhost:3000/api/menu

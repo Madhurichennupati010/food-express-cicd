@@ -1,89 +1,99 @@
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
+const bodyParser = require("body-parser");
+const path = require("path");
 
 const app = express();
-
 const PORT = 3000;
 
+// Middleware
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
+// Serve frontend files
+app.use(express.static(path.join(__dirname, "public")));
+
+// MySQL Connection
 const db = mysql.createConnection({
-    host: "mysql",        // use "localhost" if MySQL is installed locally (not Docker)
+    host: "localhost",      // Since MySQL is installed on Windows and you're testing locally
     user: "root",
-    password: "password", // change to your MySQL password
-    database: "fooddb"
+    password: "YOUR_MYSQL_PASSWORD",
+    database: "fooddb",
+    port: 3306
 });
 
 db.connect((err) => {
     if (err) {
-        console.log("Database Connection Failed");
-        console.log(err);
+        console.error("❌ MySQL Connection Failed");
+        console.error(err);
         return;
     }
 
-    console.log("Connected to MySQL");
+    console.log("✅ Connected to MySQL");
 });
 
+// Menu API
 app.get("/api/menu", (req, res) => {
 
-    res.json([
+    const menu = [
         {
-            id:1,
-            name:"Pizza",
-            price:250
+            id: 1,
+            name: "Pizza",
+            price: 250,
+            category: "Fast Food"
         },
         {
-            id:2,
-            name:"Burger",
-            price:150
+            id: 2,
+            name: "Burger",
+            price: 150,
+            category: "Fast Food"
         },
         {
-            id:3,
-            name:"Biryani",
-            price:300
+            id: 3,
+            name: "Biryani",
+            price: 300,
+            category: "Indian"
         }
-    ]);
+    ];
+
+    res.json(menu);
 
 });
 
-app.post("/order",(req,res)=>{
+// Store Order API
+app.post("/order", (req, res) => {
 
-    const {food,price}=req.body;
+    const { food, price } = req.body;
 
-    const sql="INSERT INTO orders(food,price) VALUES (?,?)";
+    const sql = "INSERT INTO orders(food, price) VALUES (?, ?)";
 
-    db.query(sql,[food,price],(err,result)=>{
+    db.query(sql, [food, price], (err, result) => {
 
-        if(err){
-
-            console.log(err);
-
+        if (err) {
+            console.error(err);
             return res.status(500).json({
-                success:false,
-                message:"Database Error"
+                success: false,
+                message: "Database Error"
             });
-
         }
 
         res.json({
-            success:true,
-            message:"Order Stored Successfully"
+            success: true,
+            message: "Order Stored Successfully"
         });
 
     });
 
 });
 
-app.get("/health",(req,res)=>{
-
-    res.send("Food Express Running");
-
+// Health Check
+app.get("/health", (req, res) => {
+    res.status(200).send("Food Express Application Running");
 });
 
-app.listen(PORT,"0.0.0.0",()=>{
-
-    console.log(`Server running on ${PORT}`);
-
+// Start Server
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Food Express Server running on port ${PORT}`);
 });

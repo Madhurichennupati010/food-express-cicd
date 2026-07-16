@@ -19,7 +19,7 @@ app.use(express.static(path.join(__dirname, "public")));
 const db = mysql.createConnection({
     host: "localhost",      // Since MySQL is installed on Windows and you're testing locally
     user: "root",
-    password: "YOUR_MYSQL_PASSWORD",
+    password: "password",
     database: "fooddb",
     port: 3306
 });

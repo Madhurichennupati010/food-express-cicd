@@ -1,110 +1,168 @@
-name: Food Express Docker CI/CD
-
+name: Food Express Docker CI/CD Pipeline
 
 on:
-
   push:
-
     branches:
       - main
 
-
-
 jobs:
-
-
-  build-deploy:
-
+  build-test-deploy:
 
     runs-on: ubuntu-latest
 
-
-
     steps:
 
+    #################################################
+    # Stage 1: Checkout Source Code
+    #################################################
 
-    # 1. Checkout Code
-
-    - name: Checkout Code
-
+    - name: Checkout Source Code
       uses: actions/checkout@v4
 
+    #################################################
+    # Stage 2: Verify Docker Installation
+    #################################################
 
+    - name: Verify Docker Installation
+      run: |
+        docker --version
+        docker info
 
-    # 2. Login Docker Hub
+    #################################################
+    # Stage 3: Login to Docker Hub
+    #################################################
 
     - name: Login to Docker Hub
-
       uses: docker/login-action@v3
-
       with:
-
         username: ${{ secrets.DOCKER_USERNAME }}
-
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+    #################################################
+    # Stage 4: Build Frontend Docker Image
+    #################################################
 
-
-    # 3. Build Docker Image
-
-    - name: Build Docker Image
-
+    - name: Build Frontend Docker Image
       run: |
-
         docker build \
-        -t madhu934652/food-express:v1 .
+        -t madhu934652/food-express-frontend:v1 \
+        ./frontend
 
+    #################################################
+    # Stage 5: Build Backend Docker Image
+    #################################################
 
-
-    # 4. Push Image
-
-    - name: Push Image to Docker Hub
-
+    - name: Build Backend Docker Image
       run: |
+        docker build \
+        -t madhu934652/food-express-backend:v1 \
+        ./backend
 
-        docker push madhu934652/food-express:v1
+    #################################################
+    # Stage 6: Verify Images
+    #################################################
 
-
-
-    # 5. Run Container
-
-    - name: Run Food Express Container
-
+    - name: Verify Docker Images
       run: |
+        docker images
 
+    #################################################
+    # Stage 7: Push Images to Docker Hub
+    #################################################
+
+    - name: Push Frontend Image
+      run: |
+        docker push madhu934652/food-express-frontend:v1
+
+    - name: Push Backend Image
+      run: |
+        docker push madhu934652/food-express-backend:v1
+
+    #################################################
+    # Stage 8: Run Backend Container
+    #################################################
+
+    - name: Run Backend Container
+      run: |
         docker run -d \
-        --name food-express \
+        --name food-backend \
         -p 3000:3000 \
-        madhu934652/food-express:v1
+        -e DB_HOST="${{ secrets.DB_HOST }}" \
+        -e DB_USER="${{ secrets.DB_USER }}" \
+        -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+        -e DB_NAME="${{ secrets.DB_NAME }}" \
+        -e DB_PORT="${{ secrets.DB_PORT }}" \
+        madhu934652/food-express-backend:v1
 
+    #################################################
+    # Stage 9: Run Frontend Container
+    #################################################
 
+    - name: Run Frontend Container
+      run: |
+        docker run -d \
+        --name food-frontend \
+        -p 8080:80 \
+        madhu934652/food-express-frontend:v1
 
-    # 6. Wait for Application Startup
+    #################################################
+    # Stage 10: Wait for Containers
+    #################################################
 
     - name: Wait for Application
-
       run: |
+        sleep 15
 
-        sleep 10
+    #################################################
+    # Stage 11: Verify Running Containers
+    #################################################
 
-
-
-    # 7. Check Container Status
-
-    - name: Check Container
-
+    - name: Verify Running Containers
       run: |
-
         docker ps
 
-        docker logs food-express
+    #################################################
+    # Stage 12: Display Container Logs
+    #################################################
 
-
-
-    # 8. Test API
-
-    - name: Test Food Express API
-
+    - name: Backend Logs
       run: |
+        docker logs food-backend
 
+    - name: Frontend Logs
+      run: |
+        docker logs food-frontend
+
+    #################################################
+    # Stage 13: Validate Frontend
+    #################################################
+
+    - name: Validate Frontend
+      run: |
+        curl --fail http://localhost:8080
+
+    #################################################
+    # Stage 14: Validate Backend Health
+    #################################################
+
+    - name: Validate Backend Health
+      run: |
+        curl --fail http://localhost:3000/health
+
+    #################################################
+    # Stage 15: Validate Backend API
+    #################################################
+
+    - name: Validate Backend API
+      run: |
         curl --fail http://localhost:3000/api/menu
+
+    #################################################
+    # Stage 16: Success Message
+    #################################################
+
+    - name: CI/CD Completed Successfully
+      run: |
+        echo "======================================="
+        echo " Food Express CI/CD Pipeline Successful "
+        echo "======================================="

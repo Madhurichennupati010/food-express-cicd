@@ -1,7 +1,7 @@
 function orderFood(food,price){
 
 
-fetch("http://localhost:5000/order",{
+fetch("http://localhost:3000/order",{
 
 
 method:"POST",
